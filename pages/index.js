@@ -1,11 +1,13 @@
 import React from 'react';
+import nookies from 'nookies';
+import jsonwebtoken from 'jsonwebtoken';
 import MainGrid from '../src/components/MainGrid'; /* Sempre começar com ./ para saber onde esta na estrutura de pastas  ./ ou ../ */
 import Box from '../src/components/Box'; /* Sempre começar com ./ para saber onde esta na estrutura de pastas  ./ ou ../ */
 import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from '../src/lib/AlurakutCommons'; /* Adiciona um componente especifico { xxxxxxxx } */
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
 
 function ProfileSidebar(propriedades) {
-  console.log(propriedades);
+  //console.log(propriedades);
   return (
     <Box as="aside"> { /* Utiliza a Box com comportamento do aside. as=TAG_html*/ }
       <img src={`https://github.com/${propriedades.githubUser}.png`} style={{ borderRadius: '8px' }}></img> {/* stylo fixo na TAG */ }
@@ -21,22 +23,29 @@ function ProfileSidebar(propriedades) {
   )
 }
 
-export default function Home() {
+function ProfileRelationsBox(propriedades) {
+  return (
+    <ProfileRelationsBoxWrapper>
+      <h2 className="smallTitle">
+        {propriedades.titles} ({propriedades.items.length})
+      </h2> 
+    
+    </ProfileRelationsBoxWrapper>
+  )
+}
+
+export default function Home(props) {
 
   /* NOTA: Usar valores variaveis em React -> {` xxxxxxxxx/${nome_da_variavel} `} */
   /* NOTA: {} para variavel ..... ${} para String */
 
   /* Valores dinamicos */
-  const usuarioAleatorio = 'RafaelAraujoCv'; 
-  const [comunidades, setComunidades] = React.useState([{
-    id: '000000',
-    title: 'Eu odeio acordar cedo',
-    image: 'https://alurakut.vercel.app/capa-comunidade-01.jpg'
-  }]); //fica olhando as comunidades function handleCriaComunidade(e), caso tenha uma auteracao ele soma e adionona na tela dinamicamente
+  const usuarioAleatorio = props.githubUser;  //props.githubUser valor q vem do login apos validaçao com a api
+  const [comunidades, setComunidades] = React.useState([]); //fica olhando as comunidades function handleCriaComunidade(e), caso tenha uma auteracao ele soma e adionona na tela dinamicamente
   // const comunidades = comunidades[0]
   // const alteradorDeComunidades/setComunidades = comunidades[1];
 
-  console.log('Nosso teste ', );
+  //console.log('Nosso teste ', );
   /*const comunidades = [
     'Alurakut'
   ]; */
@@ -49,6 +58,56 @@ export default function Home() {
     'felipefialho'
   ]
 
+  const [seguidores, setSeguidores] = React.useState([]);
+  // 0 - Pegar o Array decdados do GitHub
+  React.useEffect(function() { // executa sempre q uma coisa for auterada na tela, q recebe 2 parametros. 1- uma funcao, 2- o tempo ... [] significa exec uma so vez
+    // API GitHub - GET(padrao)
+    fetch('https://api.github.com/users/peas/followers')
+    .then(function (respostaDoServidor){
+      return respostaDoServidor.json();
+    })
+    .then(function (respostaCompleta){
+      console.log(respostaCompleta);
+      setSeguidores(respostaCompleta);
+    })
+
+    // API GraphQL - // 2 parametros. url da api e configuracoes da chamada.
+    fetch('https://graphql.datocms.com/', {
+      method: 'POST',
+      headers: {
+        'Authorization': '07b55a408db691534ba6d73a7dfa87',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ "query": `query {
+        allCommunities {
+          id 
+          title
+          imageUrl
+          creatorSlug
+        }
+      }` }) // No body, utilizar o JSON.stringify para converter em json. utilizar ` ` para poder quebrar linha 
+    })
+    .then((response) => response.json()) // pega o retorno do response.json() e ja retorna
+    .then((respostaCompleta) => {
+
+      const comunidadesVindaDoDato = respostaCompleta.data.allCommunities;
+      console.log(comunidadesVindaDoDato);
+      setComunidades(comunidadesVindaDoDato);
+
+    })
+    // OU
+    // .then(function (response) {
+    //  return response.json()
+    // })
+
+
+  }, []); 
+
+  console.log('seguidores antes do return', seguidores);
+
+  // 1 - Criar um box que vai ter um map, baseado nos itens do array que pegamos no GitHub
+
   return (
     <> { /* Abre e fecha TAG, agrupa as tags do return */ }
       <AlurakutMenu />
@@ -60,7 +119,7 @@ export default function Home() {
         <div className="welcomeArea" style={{ gridArea: 'welcomeArea' }}> {/* Importando do CSS */}
           <Box>
             <h1 className="title">
-              Bem vindo(a)
+              Bem vindo(a) {usuarioAleatorio}
             </h1>
             <OrkutNostalgicIconSet />
           </Box>
@@ -75,15 +134,29 @@ export default function Home() {
               console.log('Campo: ', dadosDoForm.get('title'));
               console.log('Imagem: ', dadosDoForm.get('image'));
 
-              const comunidade = { //criar objeto com os valores
-                id: new Date().toISOString(),
+              //criar objeto com os valores
+              const comunidade = { 
+                //id: new Date().toISOString(),
                 title: dadosDoForm.get('title'),
-                image: dadosDoForm.get('image')
+                imageUrl: dadosDoForm.get('image'),
+                creatorSlug: usuarioAleatorio,
               }
 
-              //comunidades.push('Alura Stars');
-              const comunidadesAtualizadas = [...comunidades, comunidade]; // os 3 pontos adiniona o valor na mesma Array
-              setComunidades(comunidadesAtualizadas) // Joga o novo valor la no React.useState 
+              //chama a api para cadastro
+              fetch('/api/comunidades', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(comunidade)
+              }) 
+              .then(async (response) => {
+                const dados = await response.json();
+                console.log(dados.registroCriado);
+                const comunidade = dados.registroCriado;
+                const comunidadesAtualizadas = [...comunidades, comunidade]; // os 3 pontos adiniona o valor na mesma Array
+                setComunidades(comunidadesAtualizadas) // Joga o novo valor la no React.useState 
+              })
             }}>
               <div>
                 <input 
@@ -111,6 +184,7 @@ export default function Home() {
 
         </div>
         <div className="profileRelationsArea" style={{ gridArea: 'profileRelationsArea' }}> {/* Importando do CSS */}
+        <ProfileRelationsBox titles="Seguidores" items={seguidores}/>
         <ProfileRelationsBoxWrapper>
             <h2 className="smallTitle">
               Pessoas da comunidade ({pessoasFavoritas.length})
@@ -138,8 +212,8 @@ export default function Home() {
               {comunidades.map((itemAtual) => { { /* .map => Transforma um Array e retorna Array transformada */ }
                 return (
                   <li key={itemAtual.id}> { /* key usado como identificador para nao conflitar informacoes */ }
-                    <a href={`/users/${itemAtual.title}`} key={itemAtual.title}>
-                      <img src={itemAtual.image} />
+                    <a href={`/comunities/${itemAtual.id}`}>
+                      <img src={itemAtual.imageUrl} />
                       <span>{itemAtual.title}</span>
                     </a>
                   </li>
@@ -152,4 +226,44 @@ export default function Home() {
       </MainGrid>
     </>
   )
+}
+
+//recebe o valor do coookie , usuario retornado da api apos o onSubmit={(infosDoEvento)
+export async function getServerSideProps(context) {
+  //console.log('Cookies', nookies.get(context).USER_TOKEN)
+  const cookies = nookies.get(context);
+  const token = cookies.USER_TOKEN
+  // instalar lib para fazer o decode, npm install jsonwebtoken
+  console.log('Token decodificado: ', jsonwebtoken.decode(token));
+
+  //Valida se o token/usuario existe true ou false
+  const { isAuthenticated } = await fetch('https://alurakut.vercel.app/api/auth', {
+    headers: {
+      Authorization: token
+    }
+  })
+  .then((resposta) => resposta.json());
+
+  console.log('isAuthenticated', isAuthenticated);
+
+  // if FALSE retorna para tela de login
+  if(!isAuthenticated) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      }
+    }
+  }
+
+  const { githubUser } = jsonwebtoken.decode(token) // const { } ... informa q o nome do ultimo parametro sera o nome da variavel
+  // OU
+  // const githubUser = jsonwebtoken.decode(token).githubUser;
+  return {
+    props: {
+      githubUser
+      // OU
+      // githubUser: githubUser
+    },
+  }
 }
