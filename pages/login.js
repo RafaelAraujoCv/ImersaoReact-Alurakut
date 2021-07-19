@@ -25,7 +25,7 @@ export default function LoginScreen() {
         </section>
 
         <section className="formArea">
-            {  }
+            { /* inicia login */ }
           <form className="box" onSubmit={(infosDoEvento) => {
                 infosDoEvento.preventDefault();
                 // alert('Alguém clicou no botão!')
@@ -62,11 +62,11 @@ export default function LoginScreen() {
                     console.log(evento.target.value);
                     setGithubUser(evento.target.value)
                 }}
-            /> { /* campo input com valor value pre determinado e onChange para capturar o digito no campo */ }
-            {githubUser.length === 0
-                ? 'Preencha o campo'
+                required /> { /* campo input com valor value pre determinado e onChange para capturar o digito no campo */ }
+            <code>{githubUser.length === 0
+                ? 'Campo usuário obrigatorio'
                 : ''
-            } { /* validar campo, usando if ternario ? :  */ }
+            }</code> { /* validar campo, usando if ternario ? :  */ }
             <button type="submit">
               Login
             </button>
@@ -75,7 +75,7 @@ export default function LoginScreen() {
           <footer className="box">
             <p>
               Ainda não é membro? <br />
-              <a href="/login">
+              <a href="/novousuario">
                 <strong>
                   ENTRAR JÁ
               </strong>
