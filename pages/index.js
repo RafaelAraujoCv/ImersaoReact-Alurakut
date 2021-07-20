@@ -245,16 +245,17 @@ export async function getServerSideProps(context) {
   .then((resposta) => resposta.json());
 
   console.log('isAuthenticated', isAuthenticated);
+  console.log(token);
 
   // if FALSE retorna para tela de login
-  /*if(!isAuthenticated) {
+  if(!isAuthenticated) {
     return {
       redirect: {
         destination: '/login',
         permanent: false,
       }
     }
-  }*/
+  }
 
   const { githubUser } = jsonwebtoken.decode(token) // const { } ... informa q o nome do ultimo parametro sera o nome da variavel
   // OU
